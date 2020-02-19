@@ -4,6 +4,7 @@ import { RectButton, ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenOrientation } from 'expo';
 import * as WebBrowser from 'expo-web-browser';
+import * as Speech from 'expo-speech';
 
 import { MonoText } from '../components/StyledText';
 
@@ -32,6 +33,11 @@ export default function HomeScreen() {
               icon="md-notifications"
               label="Check device orientation"
               onPress={() => checkDeviceOrientation() }
+          />
+          <OptionButton
+              icon="logo-google"
+              label="Speech mode"
+              onPress={() => speak() }
           />
         </View>
       </ScrollView>
@@ -79,6 +85,11 @@ function OptionButton({ icon, label, onPress, isLastOption }) {
       </View>
     </RectButton>
   );
+}
+
+function speak() {
+    var thingToSay = "Hello, i'm the app";
+    Speech.speak(thingToSay, { language: "en-US"});
 }
 
 function handleLearnMorePress() {
