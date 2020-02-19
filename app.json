@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Tab Navigation Template",
+    "name": "Voice Command App",
     "slug": "GoogleVoiceCommand",
     "privacy": "public",
     "sdkVersion": "36.0.0",
@@ -26,6 +26,10 @@
     ],
     "ios": {
       "supportsTablet": true
+    },
+    "android": {
+      "package": "com.gabrieljoe.GoogleVoiceCommand",
+      "versionCode": 1
     }
   }
 }

@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
+import { RectButton, ScrollView } from 'react-native-gesture-handler';
+import { Ionicons } from '@expo/vector-icons';
+import { ScreenOrientation } from 'expo';
 import * as WebBrowser from 'expo-web-browser';
 
 import { MonoText } from '../components/StyledText';
@@ -20,34 +22,19 @@ export default function HomeScreen() {
           />
         </View>
 
-        <View style={styles.getStartedContainer}>
-          <DevelopmentModeNotice />
-
-          <Text style={styles.getStartedText}>Open up the code for this screen:</Text>
-
-          <View style={[styles.codeHighlightContainer, styles.homeScreenFilename]}>
-            <MonoText>screens/HomeScreen.js</MonoText>
-          </View>
-
-          <Text style={styles.getStartedText}>
-            Change any of the text, save the file, and your app will automatically reload.
-          </Text>
-        </View>
-
-        <View style={styles.helpContainer}>
-          <TouchableOpacity onPress={handleHelpPress} style={styles.helpLink}>
-            <Text style={styles.helpLinkText}>Help, it didn’t automatically reload!</Text>
-          </TouchableOpacity>
+        <View style={styles.container} contentContainerStyle={styles.contentContainer}>
+          <OptionButton
+              icon="md-settings"
+              label="Change app orientation"
+              onPress={() => changeAppOrientation() }
+          />
+          <OptionButton
+              icon="md-notifications"
+              label="Check device orientation"
+              onPress={() => checkDeviceOrientation() }
+          />
         </View>
       </ScrollView>
-
-      <View style={styles.tabBarInfoContainer}>
-        <Text style={styles.tabBarInfoText}>This is a tab bar. You can edit it in:</Text>
-
-        <View style={[styles.codeHighlightContainer, styles.navigationFilename]}>
-          <MonoText style={styles.codeHighlightText}>navigation/BottomTabNavigator.js</MonoText>
-        </View>
-      </View>
     </View>
   );
 }
@@ -79,8 +66,40 @@ function DevelopmentModeNotice() {
   }
 }
 
+function OptionButton({ icon, label, onPress, isLastOption }) {
+  return (
+    <RectButton style={[styles.option, isLastOption && styles.lastOption]} onPress={onPress}>
+      <View style={{ flexDirection: 'row' }}>
+        <View style={styles.optionIconContainer}>
+          <Ionicons name={icon} size={22} color="rgba(0,0,0,0.35)" />
+        </View>
+        <View style={styles.optionTextContainer}>
+          <Text style={styles.optionText}>{label}</Text>
+        </View>
+      </View>
+    </RectButton>
+  );
+}
+
 function handleLearnMorePress() {
   WebBrowser.openBrowserAsync('https://docs.expo.io/versions/latest/workflow/development-mode/');
+}
+
+function changeAppOrientation() {
+  ScreenOrientation.getOrientationAsync().then(data => {
+    console.log(data.orientation)
+    if(data.orientation == ScreenOrientation.Orientation.PORTRAIT_UP) {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE)
+    } else {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
+    }
+  })
+}
+
+function checkDeviceOrientation() {
+  ScreenOrientation.getPlatformOrientationLockAsync().then(data => {
+    console.log(data)
+  })
 }
 
 function handleHelpPress() {
@@ -175,5 +194,21 @@ const styles = StyleSheet.create({
   helpLinkText: {
     fontSize: 14,
     color: '#2e78b7',
+  },
+  optionText: {
+    fontSize: 15,
+    alignSelf: 'flex-start',
+    marginTop: 1,
+  },
+  optionIconContainer: {
+    marginRight: 12,
+  },
+  option: {
+    backgroundColor: '#fdfdfd',
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 0,
+    borderColor: '#ededed',
   },
 });
