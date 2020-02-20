@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Voice Command App",
-    "slug": "GoogleVoiceCommand",
+    "name": "Football stats",
+    "slug": "FootballStats",
     "privacy": "public",
     "sdkVersion": "36.0.0",
     "platforms": [
@@ -11,8 +11,8 @@
     ],
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "icon": "./assets/images/ic_launcher.png",
+    "scheme": "footballstats",
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
@@ -28,7 +28,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.gabrieljoe.GoogleVoiceCommand",
+      "package": "com.gabrieljoe.FootballStats",
       "versionCode": 1
     }
   }

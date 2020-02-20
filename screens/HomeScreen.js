@@ -1,123 +1,66 @@
 import * as React from 'react';
-import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, View, Picker } from 'react-native';
 import { RectButton, ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import { ScreenOrientation } from 'expo';
-import * as WebBrowser from 'expo-web-browser';
-import * as Speech from 'expo-speech';
-
+import getEnvVars from '../environment.js';
 import { MonoText } from '../components/StyledText';
+import { PickerList } from '../components/PickerList';
 
-export default function HomeScreen() {
-  return (
-    <View style={styles.container}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        <View style={styles.welcomeContainer}>
-          <Image
-            source={
-              __DEV__
-                ? require('../assets/images/robot-dev.png')
-                : require('../assets/images/robot-prod.png')
-            }
-            style={styles.welcomeImage}
-          />
-        </View>
+export default class HomeScreen extends React.Component {
+  render() {
+    return (
+      <View style={styles.container}>
+        <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+          <View style={styles.welcomeContainer}>
+            <Image
+              source={
+                __DEV__
+                  ? require('../assets/images/robot-dev.png')
+                  : require('../assets/images/robot-prod.png')
+              }
+              style={styles.welcomeImage}
+            />
+          </View>
 
-        <View style={styles.container} contentContainerStyle={styles.contentContainer}>
-          <OptionButton
-              icon="md-settings"
-              label="Change app orientation"
-              onPress={() => changeAppOrientation() }
-          />
-          <OptionButton
-              icon="md-notifications"
-              label="Check device orientation"
-              onPress={() => checkDeviceOrientation() }
-          />
-          <OptionButton
-              icon="logo-google"
-              label="Speech mode"
-              onPress={() => speak() }
-          />
-        </View>
-      </ScrollView>
-    </View>
-  );
+          <View style={styles.container} contentContainerStyle={styles.contentContainer}>
+            <PickerList items={this.state.items} 
+               height={50}
+               selectedValue={this.state.selectedItem} 
+               width={400}
+               onValueChange={ (value) => { this.setState({ selectedItem: value })}}/>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+  componentDidMount() {
+    this.fetchAllLeagues()
+  }
+
+  fetchAllLeagues() {
+    fetch('https://www.thesportsdb.com/api/v1/json/1/all_leagues.php')
+    .then(response => response.json())
+    .then(responseJson => {
+        let itemsJson = responseJson.leagues.filter(function (elem, i, array) {
+          return elem.strSport == 'Soccer'
+        }).map((x,i)=> {
+          return( <Picker.Item label={x.strLeague} key={i} value={x}  />)
+        })
+        this.setState(previousState => ({ items: itemsJson })) 
+    }) 
+    .catch(error => {
+        console.error(error);
+    });
+  }
+  state = {
+    items: [],
+    selectedItem: null
+  }
 }
 
 HomeScreen.navigationOptions = {
   header: null,
 };
-
-function DevelopmentModeNotice() {
-  if (__DEV__) {
-    const learnMoreButton = (
-      <Text onPress={handleLearnMorePress} style={styles.helpLinkText}>
-        Learn more
-      </Text>
-    );
-
-    return (
-      <Text style={styles.developmentModeText}>
-        Development mode is enabled: your app will be slower but you can use useful development
-        tools. {learnMoreButton}
-      </Text>
-    );
-  } else {
-    return (
-      <Text style={styles.developmentModeText}>
-        You are not in development mode: your app will run at full speed.
-      </Text>
-    );
-  }
-}
-
-function OptionButton({ icon, label, onPress, isLastOption }) {
-  return (
-    <RectButton style={[styles.option, isLastOption && styles.lastOption]} onPress={onPress}>
-      <View style={{ flexDirection: 'row' }}>
-        <View style={styles.optionIconContainer}>
-          <Ionicons name={icon} size={22} color="rgba(0,0,0,0.35)" />
-        </View>
-        <View style={styles.optionTextContainer}>
-          <Text style={styles.optionText}>{label}</Text>
-        </View>
-      </View>
-    </RectButton>
-  );
-}
-
-function speak() {
-    var thingToSay = "Hello, i'm the app";
-    Speech.speak(thingToSay, { language: "en-US"});
-}
-
-function handleLearnMorePress() {
-  WebBrowser.openBrowserAsync('https://docs.expo.io/versions/latest/workflow/development-mode/');
-}
-
-function changeAppOrientation() {
-  ScreenOrientation.getOrientationAsync().then(data => {
-    console.log(data.orientation)
-    if(data.orientation == ScreenOrientation.Orientation.PORTRAIT_UP) {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE)
-    } else {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
-    }
-  })
-}
-
-function checkDeviceOrientation() {
-  ScreenOrientation.getPlatformOrientationLockAsync().then(data => {
-    console.log(data)
-  })
-}
-
-function handleHelpPress() {
-  WebBrowser.openBrowserAsync(
-    'https://docs.expo.io/versions/latest/get-started/create-a-new-app/#making-your-first-change'
-  );
-}
 
 const styles = StyleSheet.create({
   container: {
@@ -205,21 +148,5 @@ const styles = StyleSheet.create({
   helpLinkText: {
     fontSize: 14,
     color: '#2e78b7',
-  },
-  optionText: {
-    fontSize: 15,
-    alignSelf: 'flex-start',
-    marginTop: 1,
-  },
-  optionIconContainer: {
-    marginRight: 12,
-  },
-  option: {
-    backgroundColor: '#fdfdfd',
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: 0,
-    borderColor: '#ededed',
   },
 });

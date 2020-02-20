@@ -40,8 +40,8 @@ function getHeaderTitle(route) {
 
   switch (routeName) {
     case 'Home':
-      return 'App home';
+      return 'Home';
     case 'Links':
-      return 'Config';
+      return 'Settings';
   }
 }
