@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import TabBarIcon from '../components/TabBarIcon';
-import HomeScreen from '../screens/HomeScreen';
-import LinksScreen from '../screens/LinksScreen';
+import TeamHistory from '../screens/TeamHistory';
+import LeagueHistory from '../screens/LeagueHistory';
 
 const BottomTab = createBottomTabNavigator();
 const INITIAL_ROUTE_NAME = 'Home';
@@ -16,19 +16,19 @@ export default function BottomTabNavigator({ navigation, route }) {
   return (
     <BottomTab.Navigator initialRouteName={INITIAL_ROUTE_NAME}>
       <BottomTab.Screen
-        name="Home"
-        component={HomeScreen}
+        name="TeamHistory"
+        component={TeamHistory}
         options={{
-          title: 'Home',
-          tabBarIcon: ({ focused }) => <TabBarIcon focused={focused} name="md-home" />,
+          title: 'Team History',
+          tabBarIcon: ({ focused }) => <TabBarIcon focused={focused} name="md-football" />,
         }}
       />
       <BottomTab.Screen
-        name="Links"
-        component={LinksScreen}
+        name="LeagueHistory"
+        component={LeagueHistory}
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ focused }) => <TabBarIcon focused={focused} name="md-settings" />,
+          title: 'League History',
+          tabBarIcon: ({ focused }) => <TabBarIcon focused={focused} name="md-analytics" />,
         }}
       />
     </BottomTab.Navigator>
@@ -39,9 +39,9 @@ function getHeaderTitle(route) {
   const routeName = route.state?.routes[route.state.index]?.name ?? INITIAL_ROUTE_NAME;
 
   switch (routeName) {
-    case 'Home':
-      return 'Home';
-    case 'Links':
-      return 'Settings';
+    case 'TeamHistory':
+      return 'TeamHistory';
+    case 'LeagueHistory':
+      return 'LeagueHistory';
   }
 }

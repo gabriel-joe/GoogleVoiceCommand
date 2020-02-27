@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Image, Platform, StyleSheet, Text, TouchableOpacity, View, Picker, TextInput, Button, Alert, StatusBar,Dimensions,ToastAndroid  } from 'react-native';
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, View, Picker, TextInput, Button, Alert, StatusBar,Dimensions,ToastAndroid,ActivityIndicator  } from 'react-native';
 import { RectButton, ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import getEnvVars from '../environment.js';
@@ -13,82 +13,24 @@ import {
 
 export default class HomeScreen extends React.Component {
   render() {
-    return (
-      <View style={styles.container}>
-        <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-          <View style={styles.welcomeContainer}>
-            <Image
-              source={
-                __DEV__
-                  ? require('../assets/images/robot-dev.png')
-                  : require('../assets/images/robot-prod.png')
-              }
-              style={styles.welcomeImage}
-            />
-          </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              height: 30,
-              paddingLeft: 10,
-              marginBottom: 10,
-              justifyContent: 'flex-start',
-              alignItems: 'stretch'
-            }}>
-              <TextInput
-                style={{ borderColor: 'gray', borderWidth: 1, width: 150, marginRight: 15 }}
-                onChangeText={text => this.setState({searchText: text})}
-                placeholder="Team"
-                value={this.state.value}
-              />
-              <Button
-                title="Search"
-                style={{ textAlign: 'center' }}
-                onPress={() => this.getTeamByName()}
-              />
-          </View>
-          <View style={styles.container} contentContainerStyle={styles.contentContainer}>
-            <PickerList items={this.state.teamsPicker} 
-               height={50}
-               enabled={this.state.teamsPicker.length > 0}
-               selectedValue={this.state.team} 
-               width={350}
-               onValueChange={ (value) => { this.setTeam(value) } }/>
-          </View>
-          <View style={styles.spacedContainer} contentContainerStyle={styles.contentContainer}>
-            <Text style={styles.containerText}>
-              Team history
-            </Text>
-            <PieChart
-              data={this.state.data}
-              width={Dimensions.get("window").width}
-              height={220}
-              chartConfig={chartConfig}
-              accessor="count"
-              backgroundColor="transparent"
-              paddingLeft="15"
-              absolute
-            />
-          </View>
-          
-        </ScrollView>
-      </View>
-    );
+    return <ViewConditioning component={this}/>
   }
 
   getTeamByName() {
-    this.setState({ team: null, data: [] })
+    this.setState({ team: null, data: [],isLoading: true })
     fetch(API.urlFindTeamByName + this.state.searchText)
     .then(response => response.json())
     .then(responseJson => {
+        this.setState({isLoading: false})
         if(responseJson.teams != null)
           this.loadTeamsLeague(responseJson)
         else
           ToastAndroid.showWithGravity('Not found', ToastAndroid.SHORT, ToastAndroid.CENTER);
+        this.setState({isLoading: false})
     })
     .catch(error => {
         console.error(error);
-        // ToastAndroid.show(error, ToastAndroid.SHORT);
+        this.setState({isLoading: false})
     });
   }
 
@@ -99,14 +41,17 @@ export default class HomeScreen extends React.Component {
 
   loadTeamsLeague(responseJson) {
     let leaguesFilter = []
-    responseJson.teams.forEach(element => {
-        let team = {
-          'idTeam': element.idTeam,
-          'idLeague': element.idLeague,
-          'league': element.strLeague,
-          'team': element.strTeam
+    responseJson.teams.forEach((element,i) => {
+        if(element.strSport == 'Soccer') {
+          let team = {
+            'idTeam': element.idTeam,
+            'idLeague': element.idLeague,
+            'league': element.strLeague,
+            'team': element.strTeam
+          }
+          leaguesFilter.push(team)
+          if(i == 0) this.setTeam(team)
         }
-        leaguesFilter.push(team)
     });
     let leaguesPicker = leaguesFilter.map((x,i)=> {
       return( <Picker.Item label={x.team + ' - ' + x.league} key={i} value={x}  />)
@@ -115,15 +60,18 @@ export default class HomeScreen extends React.Component {
   }
 
   retrieveHistory(team) {
+    this.setState({isLoading: true})
     fetch(API.urlGetTheLast5Games + team.idTeam)
     .then(response => response.json())
     .then(responseJson => {
-        this.loadChart(responseJson, team.idTeam)
+      this.loadChart(responseJson, team.idTeam)
+      this.setState({isLoading: false})
     })
     .catch(error => {
-        console.error(error);
-        ToastAndroid.show(error, ToastAndroid.SHORT);
+      console.error(error);
+      this.setState({isLoading: false})
     });
+    
   }
 
   loadChart(responseJson, idTeam) {
@@ -164,7 +112,6 @@ export default class HomeScreen extends React.Component {
     selectedItem: null,
     searchText: null,
     team: null,
-    isReady: false,
     dataOption: {
       name: "",
       count: 0,
@@ -172,13 +119,85 @@ export default class HomeScreen extends React.Component {
       legendFontColor: "#7F7F7F",
       legendFontSize: 15
     },
-    data: []
+    data: [],
+    isLoading: false
   }
 }
 
 HomeScreen.navigationOptions = {
   header: null,
 };
+
+function ViewConditioning(props) {
+    if(props.component.state.isLoading) {
+      return (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      )
+    }
+    return (
+      <View style={styles.container}>
+        <ScrollView style={[styles.container]} contentContainerStyle={styles.contentContainer}>
+          <View style={styles.welcomeContainer}>
+            <Image
+              source={
+                __DEV__
+                  ? require('../assets/images/robot-dev.png')
+                  : require('../assets/images/robot-prod.png')
+              }
+              style={styles.welcomeImage}
+            />
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              height: 30,
+              paddingLeft: 10,
+              marginBottom: 10,
+              justifyContent: 'flex-start',
+              alignItems: 'stretch'
+            }}>
+              <TextInput
+                style={{ borderColor: 'gray', borderWidth: 1, width: 150, marginRight: 15 }}
+                onChangeText={text => props.component.setState({searchText: text})}
+                placeholder="Team"
+                value={props.component.state.value}
+              />
+              <Button
+                title="Search"
+                style={{ textAlign: 'center' }}
+                onPress={() => props.component.getTeamByName()}
+              />
+          </View>
+          <View style={styles.container} contentContainerStyle={styles.contentContainer}>
+            <PickerList items={props.component.state.teamsPicker} 
+               height={50}
+               enabled={props.component.state.teamsPicker.length > 0}
+               selectedValue={props.component.state.team} 
+               width={350}
+               onValueChange={ (value) => { props.component.setTeam(value) } }/>
+          </View>
+          <View style={styles.spacedContainer} contentContainerStyle={styles.contentContainer}>
+            <Text style={styles.containerText}>
+              Team history
+            </Text>
+            <PieChart
+              data={props.component.state.data}
+              width={Dimensions.get("window").width}
+              height={220}
+              chartConfig={chartConfig}
+              accessor="count"
+              backgroundColor="transparent"
+              paddingLeft="15"
+              absolute
+            />
+          </View>
+          
+        </ScrollView>
+      </View>
+    );
+  }
 
 const styles = StyleSheet.create({
   container: {
@@ -189,6 +208,10 @@ const styles = StyleSheet.create({
     marginTop: 20,
     flex: 1,
     backgroundColor: '#fff',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center'
   },
   containerText: {
     marginBottom: 20,
