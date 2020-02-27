@@ -6,6 +6,8 @@ export class PickerList extends React.Component {
   render() {
       return <Picker
                 selectedValue={this.props.selectedValue}
+                mode="dropdown"
+                enabled={this.props.enabled}
                 style={{ height: this.getDefaultHeight(), width: this.getDefaultWidth() }}
                 onValueChange={this.props.onValueChange}>
                 { this.props.items }
