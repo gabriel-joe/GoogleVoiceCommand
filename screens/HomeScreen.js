@@ -1,23 +1,18 @@
 import * as React from 'react';
-import { Image, Platform, StyleSheet, Text, TouchableOpacity, View, Picker, TextInput, Button, Alert, StatusBar } from 'react-native';
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, View, Picker, TextInput, Button, Alert, StatusBar,Dimensions,ToastAndroid  } from 'react-native';
 import { RectButton, ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import getEnvVars from '../environment.js';
-import { MonoText } from '../components/StyledText';
 import { PickerList } from '../components/PickerList';
-import API from '../constants/ApiUrl.js'
-import { AppLoading } from 'expo';
+import API from '../constants/APIEndpoint.js';
+import {
+  ProgressChart,
+  LineChart,
+  PieChart
+} from "react-native-chart-kit";
 
 export default class HomeScreen extends React.Component {
   render() {
-    /* if (!this.state.isReady) {
-      return (
-        <AppLoading
-          startAsync={this._fetchAllLeagues.bind(this)}
-          onFinish={() => this.setState({ isReady: true })}
-          onError={console.warn}
-        />
-      ); } */
     return (
       <View style={styles.container}>
         <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -56,48 +51,128 @@ export default class HomeScreen extends React.Component {
             <PickerList items={this.state.teamsPicker} 
                height={50}
                enabled={this.state.teamsPicker.length > 0}
-               selectedValue={this.state.selectedItem} 
+               selectedValue={this.state.team} 
                width={350}
-               onValueChange={ (value) => { this.setState({ selectedItem: value })}}/>
+               onValueChange={ (value) => { this.setTeam(value) } }/>
           </View>
-          <StatusBar backgroundColor="black" barStyle="dark-content" currentHeight='100' animated={true} hidden={ false } visibleStatusBar={true}/>
+          <View style={styles.spacedContainer} contentContainerStyle={styles.contentContainer}>
+            <Text style={styles.containerText}>
+              Team history
+            </Text>
+            <PieChart
+              data={this.state.data}
+              width={Dimensions.get("window").width}
+              height={220}
+              chartConfig={chartConfig}
+              accessor="count"
+              backgroundColor="transparent"
+              paddingLeft="15"
+              absolute
+            />
+          </View>
+          
         </ScrollView>
       </View>
     );
   }
 
   getTeamByName() {
+    this.setState({ team: null, data: [] })
     fetch(API.urlFindTeamByName + this.state.searchText)
     .then(response => response.json())
     .then(responseJson => {
-        let leaguesFilter = []
-        responseJson.teams.forEach(element => {
-           let team = {
-             'idTeam': element.idTeam,
-             'idLeague': element.idLeague,
-             'league': element.strLeague,
-             'team': element.strTeam
-           }
-           leaguesFilter.push(team)
-        });
-        console.log(leaguesFilter)
-        let leaguesPicker = leaguesFilter.map((x,i)=> {
-          return( <Picker.Item label={x.team + ' - ' + x.league} key={i} value={x}  />)
-        })
-        this.setState({teams: leaguesFilter, teamsPicker: leaguesPicker})
-        console.log(this.state.team)
+        if(responseJson.teams != null)
+          this.loadTeamsLeague(responseJson)
+        else
+          ToastAndroid.showWithGravity('Not found', ToastAndroid.SHORT, ToastAndroid.CENTER);
     })
     .catch(error => {
         console.error(error);
+        // ToastAndroid.show(error, ToastAndroid.SHORT);
     });
   }
+
+  setTeam(value) {
+    this.setState({ team: value })
+    this.retrieveHistory(value)
+  }
+
+  loadTeamsLeague(responseJson) {
+    let leaguesFilter = []
+    responseJson.teams.forEach(element => {
+        let team = {
+          'idTeam': element.idTeam,
+          'idLeague': element.idLeague,
+          'league': element.strLeague,
+          'team': element.strTeam
+        }
+        leaguesFilter.push(team)
+    });
+    let leaguesPicker = leaguesFilter.map((x,i)=> {
+      return( <Picker.Item label={x.team + ' - ' + x.league} key={i} value={x}  />)
+    })
+    this.setState({team: null, teams: leaguesFilter, teamsPicker: leaguesPicker})
+  }
+
+  retrieveHistory(team) {
+    fetch(API.urlGetTheLast5Games + team.idTeam)
+    .then(response => response.json())
+    .then(responseJson => {
+        this.loadChart(responseJson, team.idTeam)
+    })
+    .catch(error => {
+        console.error(error);
+        ToastAndroid.show(error, ToastAndroid.SHORT);
+    });
+  }
+
+  loadChart(responseJson, idTeam) {
+    let win = 0
+    let lose = 0
+    let draw = 0
+    responseJson.results.forEach(element => {
+      var homeTeam = false
+      if(element.idHomeTeam == idTeam) {
+        win += element.intHomeScore > element.intAwayScore ? 1 : 0
+        draw += element.intHomeScore == element.intAwayScore ? 1 : 0
+        lose += element.intAwayScore > element.intHomeScore ? 1 : 0
+      } else {
+        win += element.intAwayScore > element.intHomeScore ? 1 : 0
+        draw += element.intHomeScore == element.intAwayScore ? 1 : 0
+        lose += element.intHomeScore > element.intAwayScore ? 1 : 0
+      }
+    });
+    this.setState({data: []})
+    this.populateChart('Win', win, 'green')
+    this.populateChart('Draw', draw, 'blue')
+    this.populateChart('Lose', lose, 'red')
+  }
+
+  populateChart(label, count, color) {
+    var option = Object.assign({}, this.state.dataOption);
+    option.name = label
+    option.count = count
+    option.color = color
+    let dataTemp = this.state.data
+    dataTemp.push(option)
+    this.setState({ data: dataTemp })
+  }
+
   state = {
     teamsPicker: [],
     teams: [],
     selectedItem: null,
     searchText: null,
     team: null,
-    isReady: false
+    isReady: false,
+    dataOption: {
+      name: "",
+      count: 0,
+      color: "",
+      legendFontColor: "#7F7F7F",
+      legendFontSize: 15
+    },
+    data: []
   }
 }
 
@@ -110,10 +185,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  developmentModeText: {
+  spacedContainer: {
+    marginTop: 20,
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  containerText: {
     marginBottom: 20,
     color: 'rgba(0,0,0,0.4)',
-    fontSize: 14,
+    fontSize: 20,
     lineHeight: 19,
     textAlign: 'center',
   },
@@ -193,3 +273,37 @@ const styles = StyleSheet.create({
     color: '#2e78b7',
   },
 });
+
+const chartConfig = {
+  backgroundGradientFrom: "#1E2923",
+  backgroundGradientFromOpacity: 0,
+  backgroundGradientTo: "#08130D",
+  backgroundGradientToOpacity: 0.5,
+  color: (opacity = 1) => `rgba(26, 255, 146, ${opacity})`,
+  strokeWidth: 2, // optional, default 3
+  barPercentage: 0.5
+};
+
+const dataa = [
+  {
+    name: "Lost",
+    population: 10,
+    color: "green",
+    legendFontColor: "#7F7F7F",
+    legendFontSize: 15
+  },
+  {
+    name: "Draw",
+    population: 40,
+    color: "blue",
+    legendFontColor: "#7F7F7F",
+    legendFontSize: 15
+  },
+  {
+    name: "Victory",
+    population: 60,
+    color: "red",
+    legendFontColor: "#7F7F7F",
+    legendFontSize: 15
+  }
+];
